@@ -1,0 +1,5 @@
+#!/bin/sh
+
+install docklet /usr/bin
+install functions.py /usr/bin
+install mylog.py /usr/bin
