@@ -3,7 +3,7 @@
 
 import os
 import argparse
-from functions import login,pkulogin,beans_apply,logout
+from functions import login,beans_apply,logout
 from functions import workspace_add,workspace_start,workspace_stop,workspace_delete
 from functions import node_add,node_default_set,node_save,node_delete
 from functions import port_apply,port_delete
