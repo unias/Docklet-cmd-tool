@@ -3,377 +3,626 @@
 
 import os
 import requests
-import http.cookiejar as HC
 import json
 from functools import wraps
+
+#set config
+user_port='9100'
+host_ip='222.29.159.164'
+master_port='9000'
+
 
 def base_func(func):
     @wraps(func)
     def wrapper(*args, **kw):
         #check whether the user have login
-        if (not os.path.exists('/tmp/cookies/cookie.txt')) or (not os.path.exists('/tmp/cookies/baseurl')) \
-                or (not os.path.exists('/tmp/cookies/masterIP')):
+        if not os.path.exists(os.environ['HOME']+'/docklet-cookies/token.json'):
             print('please login first!')
             print('run docklet login -h for help')
             exit(1)
-        #load cookie and set session
-        load_cookiejar = HC.LWPCookieJar()
-        load_cookiejar.load('/tmp/cookies/cookie.txt', ignore_discard=True, ignore_expires=True)
-        load_cookies = requests.utils.dict_from_cookiejar(load_cookiejar)
-        conect_s = requests.Session()
-        conect_s.cookies = requests.utils.cookiejar_from_dict(load_cookies)
-        #get base_url
-        f = open('/tmp/cookies/baseurl')
-        baseurl = f.read()
-        f.close()
-        f = open('/tmp/cookies/masterIP')
-        masterIP = f.read()
-        f.close()
-        return func(conect_s,baseurl,masterIP,*args, **kw)
+        #load token
+        try:
+            cookie_file=open(os.environ['HOME']+'/docklet-cookies/token.json','r')
+        except:
+            print('fail to open the token file')
+            exit(1)
+        cookie=json.load(cookie_file)
+        cookie_file.close()
+
+        return func(cookie,*args, **kw)
     return wrapper
+
+def pkulogin(args):
+    # check whether there is already one user
+    if os.path.exists(os.environ['HOME']+'/docklet-cookies/token.json'):
+        print("Error: there is already one user, if you want to use another account ,please logout first!")
+        exit(0)
+    # create session
+    conect_s = requests.Session()
+    # get url
+    login_url = 'https://iaaa.pku.edu.cn/iaaa/oauthlogin.do'
+    external_payload = {
+        "appid":'iwork',
+        "otpCode":'动态口令',
+        "password": args.password,
+        "randCode":'验证码',
+        "redirUrl":'http://iwork.pku.edu.cn/pkulogin',
+        "smsCode":'短信验证码',
+        "userName": args.username,
+    }
+    # send requests and handle response
+    try:
+        external_response = conect_s.post(url=login_url, data=external_payload)
+    except:
+        print('fail to send the auth request,check your connection')
+        exit(1)
+    payload={
+        'appid':'iwork',
+        'ip':'',
+        'token':external_response.json()['token']
+    }
+    result=requests.post(url='http://'+host_ip+':'+user_port+'/external_login/',data=payload).json()
+    if result['success']=='true':
+        print('login success')
+        if not os.path.exists(os.environ['HOME']+'/docklet-cookies/'):
+            os.makedirs(os.environ['HOME']+'/docklet-cookies/')
+        f = open(os.environ['HOME']+"/docklet-cookies/token.json", "w")
+        json.dump(result, f)
+        f.close()
+    else:
+        print(result['message'])
 
 
 def login(args):
-    #check whether there is already one user
-    if os.path.exists('/tmp/cookies/cookie.txt') or os.path.exists('/tmp/cookies/baseurl') or os.path.exists('/tmp/cookies/masterIP'):
+    # check whether there is already one user
+    if os.path.exists(os.environ['HOME']+'/docklet-cookies/token.json'):
         print("Error: there is already one user, if you want to use another account ,please logout first!")
         exit(0)
-    #create session
-    conect_s=requests.Session()
-    #get url
-    baseurl = 'http://' + args.address
-    login_url=baseurl+'/login/'
-    payload = {
-        "username": args.username,
-        "password": args.password
-    }
-    #send requests and handle response
-    response = conect_s.post(url=login_url, data=payload)
-    if 'workspace' in response.text:
-        print('login to %s success' % [args.address])
-    else:
-        print('login to %s fail,please check your command and try again' % [args.address])
-        exit(1)
-    #store base_url and masterIP to local
-    f = open('/tmp/cookies/baseurl', 'w')
-    f.write(baseurl)
-    f.close()
-    f = open('/tmp/cookies/masterIP', 'w')
-    f.write(args.masterIP)
-    f.close()
-    #store cookie to local
-    new_cookie_jar = HC.LWPCookieJar('cookie.txt')
-    requests.utils.cookiejar_from_dict({c.name: c.value for c in conect_s.cookies}, new_cookie_jar)
-    new_cookie_jar.save('/tmp/cookies/cookie.txt', ignore_discard=True, ignore_expires=True)
-
-@base_func
-def beans_apply(conect_s,baseurl,masterIP,args):
-    #get url
-    apply_beans_url = baseurl + "/beans/apply/"
-    payload = {
-        "number": args.num,
-        "reason": args.reason,
-        "remlen": 300 - len(args.reason)
-    }
-    # send requests and handle response
-    response = conect_s.post(url=apply_beans_url, data=payload)
-    if response.status_code==requests.codes.ok:
-        print("apply beans, request sent success")
-    else:
-        print("apply beans, request sent failed")
-
-@base_func
-def logout(conect_s,baseurl,masterIP,args):
     # get url
-    logout_url = baseurl + '/logout/'
+    baseurl = 'http://' + host_ip+':'+user_port
+    login_url = baseurl + '/login/'
+    payload = {
+        "user": args.user,
+        "key": args.password
+    }
     # send requests and handle response
-    response = conect_s.get(url=logout_url)
-    if os.path.exists('/tmp/cookies/baseurl'):
-        os.remove('/tmp/cookies/baseurl')
-    if os.path.exists('/tmp/cookies/cookie.txt'):
-        os.remove('/tmp/cookies/cookie.txt')
-    if os.path.exists('/tmp/cookies/masterIP'):
-        os.remove('/tmp/cookies/masterIP')
+    try:
+        result = requests.post(url=login_url, data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print('login success')
+        if not os.path.exists(os.environ['HOME']+'/docklet-cookies/'):
+            os.makedirs(os.environ['HOME']+'/docklet-cookies/')
+        f=open(os.environ['HOME']+"/docklet-cookies/token.json", "w")
+        json.dump(result, f)
+        f.close()
+    else:
+        print(result['message'])
+
+@base_func
+def logout(cookie,args):
+    if os.path.exists(os.environ['HOME']+'/docklet-cookies/token.json'):
+        os.remove(os.environ['HOME']+'/docklet-cookies/token.json')
+    if os.path.exists(os.environ['HOME']+'/docklet-cookies/master_ip'):
+        os.remove(os.environ['HOME']+'/docklet-cookies/master_ip')
     print('logout success')
 
 @base_func
-def workspace_add(conect_s,baseurl,masterIP,args):
-    #get url
-    workspacce_add_url = baseurl + '/workspace/'+masterIP+'/add/'
+def image_list(cookie,args):
+    payload={
+        'token':cookie['data']['token']
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/image/list/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        for group in result['images']:
+            print('%s :' % group)
+            if group=='private':
+                for image in result['images'][group]:
+                    print(image)
+            elif group=='public':
+                for image in result['images'][group]:
+                    print('%s : %s' % (image,result['images'][group][image]))
+    else:
+        print(result['message'])
+
+@base_func
+def image_share(cookie,args):
+    payload={
+        'token':cookie['data']['token'],
+        "image": args.name
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/image/share/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print('success share image')
+    else:
+        print(result['message'])
+
+@base_func
+def image_unshare(cookie,args):
+    payload={
+        'token':cookie['data']['token'],
+        "image": args.name
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/image/unshare/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print('success unshare image')
+    else:
+        print(result['message'])
+
+
+@base_func
+def image_delete(cookie,  args):
     payload = {
-        "clusterName": args.name,
-        "image": args.image,
+        'token': cookie['data']['token'],
+        "image": args.name
+    }
+    try:
+        result = requests.post(url='http://'+host_ip+':'+master_port + '/image/delete/', data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success'] == 'true':
+        print('success delete image')
+    else:
+        print(result['message'])
+
+@base_func
+def image_updatebase(cookie,  args):
+    payload = {
+        'token': cookie['data']['token'],
+        "image": args.name
+    }
+    try:
+        result = requests.post(url='http://'+host_ip+':'+master_port + '/image/updatebase/', data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success'] == 'true':
+        print('success update base image')
+    else:
+        print(result['message'])
+
+
+@base_func
+def cluster_create(cookie,args):
+    index1 = args.image.rindex("_")
+    index2 = args.image[:index1].rindex("_")
+    payload={
+        'token':cookie['data']['token'],
+        "clustername": args.name,
+        "imagename": args.image[:index2],
+        "imageowner":args.image[index2+1:index1],
+        "imagetype":args.image[index1+1:],
         "cpuSetting": args.c,
         "memorySetting": args.m,
         "diskSetting": args.d
     }
-    # send requests and handle response
-    response = conect_s.post(url=workspacce_add_url, data=payload)
-    if response.status_code==requests.codes.ok:
-        print('create workspace %s, request sent success' % args.name)
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/cluster/create/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print('success create cluster')
     else:
-        print('create workspace %s, request sent failed' % args.name)
+        print(result['message'])
 
 @base_func
-def workspace_start(conect_s,baseurl,masterIP,args):
-    #get url
-    workspace_start_url = baseurl + "/workspace/"+masterIP+"/start/" + args.name + "/"
-    # send requests and handle response
-    response = conect_s.get(url=workspace_start_url)
-    if response.status_code==requests.codes.ok:
-        print('start workspace %s, request sent success' % args.name)
+def cluster_start(cookie,args):
+    payload={
+        "clustername": args.name,
+        'token':cookie['data']['token']
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/cluster/start/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print('success start workspace %s' % args.name)
     else:
-        print('start workspace %s, request sent failed' % args.name)
+        print(result['message'])
 
 @base_func
-def workspace_stop(conect_s,baseurl,masterIP,args):
-    #get url
-    workspace_stop_url = baseurl + "/workspace/"+masterIP+"/stop/" + args.name + "/"
-    # send requests and handle response
-    response = conect_s.get(url=workspace_stop_url)
-    if response.status_code==requests.codes.ok:
-        print('stop workspace %s, request sent success' % args.name)
-    else:
-        print('stop workspace %s, request sent failed' % args.name)
-
-@base_func
-def workspace_delete(conect_s,baseurl,masterIP,args):
-    #get url
-    workspace_delete_url = baseurl + "/workspace/"+masterIP+"/delete/" + args.name + "/"
-    # send requests and handle response
-    response = conect_s.get(url=workspace_delete_url)
-    if response.status_code==requests.codes.ok:
-        print('delete workspace %s, request sent success' % args.name)
-    else:
-        print('delete workspace %s, request sent failed' % args.name)
-
-@base_func
-def node_add(conect_s,baseurl,masterIP,args):
-    #get url
-    node_add_url = baseurl + "/workspace/"+masterIP+"/scaleout/" + args.w_name + "/"
+def cluster_stop(cookie,args):
     payload = {
-        "DataTables_Table_0_length": args.dt_len,
-        "image": args.image,
+        "clustername": args.name,
+        'token': cookie['data']['token']
+    }
+    try:
+        result = requests.post(url='http://'+host_ip+':'+master_port + '/cluster/stop/', data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success'] == 'true':
+        print('success stop workspace %s' % args.name)
+    else:
+        print(result['message'])
+
+@base_func
+def cluster_delete(cookie,args):
+    payload = {
+        "clustername": args.name,
+        'token': cookie['data']['token']
+    }
+    try:
+        result = requests.post(url='http://'+host_ip+':'+master_port + '/cluster/delete/', data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success'] == 'true':
+        print('success delete workspace %s' % args.name)
+    else:
+        print(result['message'])
+
+@base_func
+def cluster_list(cookie,args):
+    payload={
+        'token':cookie['data']['token']
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/cluster/list/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print(result['clusters'])
+    else:
+        print(result['message'])
+
+@base_func
+def cluster_info(cookie,args):
+    payload={
+        'token':cookie['data']['token'],
+        "clustername": args.name
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/cluster/info/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print(result['message'])
+    else:
+        print(result['message'])
+
+
+@base_func
+def node_add(cookie,args):
+    index1 = args.image.rindex("_")
+    index2 = args.image[:index1].rindex("_")
+    payload = {
+        'token': cookie['data']['token'],
+        "clustername": args.w_name,
+        "imagename": args.image[:index2],
+        "imageowner": args.image[index2 + 1:index1],
+        "imagetype": args.image[index1 + 1:],
         "cpuSetting": args.c,
         "memorySetting": args.m,
         "diskSetting": args.d
     }
-    # send requests and handle response
-    response = conect_s.post(url=node_add_url, data=payload)
-    if response.status_code==requests.codes.ok:
-        print('add node to workspace %s, request sent success' % args.w_name)
+    try:
+        result = requests.post(url='http://'+host_ip+':'+master_port + '/cluster/scaleout/', data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success'] == 'true':
+        print('success add node to %s' % args.w_name)
     else:
-        print('add node to workspace %s, request sent failed' % args.w_name)
+        print(result['message'])
 
 @base_func
-def node_default_set(conect_s,baseurl,masterIP,args):
-    #get url
-    node_default_set_url = baseurl + '/quota/chlxcsetting/'
+def node_delete(cookie,args):
+    payload={
+        'token':cookie['data']['token'],
+        "containername": args.n_name,
+        "clustername": args.w_name
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/cluster/scalein/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true' or result['message']=='No port mapping.':
+        print('success delete node %s' % args.n_name)
+    else:
+        print(result['message'])
+
+@base_func
+def node_save(cookie,args):
+    payload={
+        'token':cookie['data']['token'],
+        "clustername": args.w_name,
+        "image": args.i_name,
+        "containername": args.n_name,
+        "description": args.description,
+        "isforce": args.isforce
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/cluster/save/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print(result)
+    else:
+        print(result['message'])
+
+@base_func
+def node_flush(cookie,args):
+    payload={
+        'token':cookie['data']['token'],
+        "clustername": args.w_name,
+        "from_lxc": args.n_name
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/cluster/flush/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print('success flush node %s' % args.n_name)
+    else:
+        print(result['message'])
+
+@base_func
+def node_list(cookie,args):
     payload = {
+        'token': cookie['data']['token'],
+        "clustername": args.name
+    }
+    try:
+        result = requests.post(url='http://'+host_ip+':'+master_port + '/cluster/info/', data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success'] == 'true':
+        for x in result['message']['containers']:
+            print(x)
+    else:
+        print(result['message'])
+
+@base_func
+def node_status(cookie,args):
+    payload={
+        'token':cookie['data']['token']
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/monitor/vnodes/%s/basic_info/'%(args.n_name),data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print(result['monitor']['basic_info'])
+    else:
+        print(result['message'])
+
+@base_func
+def node_default_set(cookie,args):
+    payload={
+        'token':cookie['data']['token'],
         "lxcCpu": args.cpu_num,
         "lxcMemory": args.memory_size,
         "lxcDisk": args.disk_size
     }
-    # send requests and handle response
-    response = conect_s.post(url=node_default_set_url, data=payload)
-    if 'Sorry, but you did not have the authorizaion for that action' in response.text:
-        print('Error! only administrator can do this!')
-    elif response.status_code==requests.codes.ok:
-        print('set node default config, request sent success')
+    try:
+        result=requests.post(url='http://'+host_ip+':'+user_port+'/user/chlxcsetting/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print('success set default config for node')
     else:
-        print('set node default config, request sent failed')
+        print(result['message'])
 
 @base_func
-def node_delete(conect_s,baseurl,masterIP,args):
-    #get url
-    node_delete_url = baseurl + "/workspace/"+masterIP+"/scalein/" + args.w_name + "/" + args.n_name + "/"
-    # send requests and handle response
-    response = conect_s.get(url=node_delete_url)
-    if response.status_code==requests.codes.ok:
-        print('delete node %s from workspace %s, request sent success' % (args.n_name,args.w_name))
-    else:
-        print('delete node %s from workspace %s, request sent failed' % (args.n_name,args.w_name))
-
-@base_func
-def node_save(conect_s,baseurl,masterIP,args):
-    #get url
-    save_image_url = baseurl + "/workspace/"+masterIP+"/save/" + args.w_name + "/" + args.n_name + "/"
-    payload = {
-        'ImageName': args.i_name,
-        'description': args.description
+def node_default_get(cookie,args):
+    payload={
+        'token':cookie['data']['token']
     }
-    # send requests and handle response
-    response = conect_s.post(url=save_image_url, data=payload)
-    if response.status_code==requests.codes.ok:
-        print('save node %s from workspace %s as image %s, request sent success' % (args.n_name,args.w_name,args.i_name))
+    try:
+        result=requests.post(url='http://'+host_ip+':'+user_port+'/user/lxcsettingList/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print(result['data'])
     else:
-        print('save node %s from workspace %s as image %s, request sent failed' % (args.n_name,args.w_name,args.i_name))
+        print(result['message'])
 
 @base_func
-def port_apply(conect_s,baseurl,masterIP,args):
-    #get url
-    apply_port_url = baseurl + '/port_mapping/add/'+masterIP+'/'
+def status_all(cookie,args):
     payload = {
-        "clustername": args.w_name,
-        "node_name": args.n_name,
-        "node_ip": args.node_ip,
-        "node_port": args.port
+        'token': cookie['data']['token']
     }
-    # send requests and handle response
-    response = conect_s.post(url=apply_port_url, data=payload)
-    if response.status_code==requests.codes.ok:
-        print('apply port for node %s of workspace %s, request sent success' % (args.n_name,args.w_name))
-    else:
-        print('apply port for node %s of workspace %s, request sent failed' % (args.n_name,args.w_name))
+    try:
+        result = requests.post(url='http://'+host_ip+':'+master_port + '/cluster/list/', data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success'] == 'true':
+        for cluster in result['clusters']:
+            cluster_payload={
+                'token': cookie['data']['token'],
+                "clustername": cluster
+            }
+            try:
+                cluster_result = requests.post(url='http://'+host_ip+':'+master_port + '/cluster/info/', data=cluster_payload).json()
+            except:
+                print('fail to send the request,check your connection')
+                exit(1)
+            if cluster_result['success'] == 'true':
+                for container in cluster_result['message']['containers']:
+                    container_payload = {
+                        'token': cookie['data']['token']
+                    }
+                    try:
+                        container_result=requests.post(url='http://'+host_ip+':'+master_port+'/monitor/vnodes/%s/basic_info/'%(container['containername']),data=container_payload).json()
+                    except:
+                        print('fail to send the request,check your connection')
+                        exit(1)
+                    if container_result['success'] == 'true':
+                        print(container_result['monitor']['basic_info'])
+                    else:
+                        print(container_result['message'])
 
 @base_func
-def port_delete(conect_s,baseurl,masterIP,args):
-    # get url
-    port_delete_url = baseurl + '/port_mapping/delete/'+masterIP+'/' + args.w_name + '/' + args.n_name + '/'+args.port+'/'
-    # send requests and handle response
-    response = conect_s.get(url=port_delete_url)
-    if response.status_code==requests.codes.ok:
-        print('delete port for node %s of workspace %s, request sent success' % (args.n_name,args.w_name))
-    else:
-        print('delete port for node %s of workspace %s, request sent failed' % (args.n_name,args.w_name))
-
-@base_func
-def group_add(conect_s,baseurl,masterIP,args):
-    #get url
-    group_add_url = baseurl + '/group/add/'
-    payload = {
-        "groupname": args.name,
-        "cpu": args.cpu_num,
-        "memory": args.memory_size,
-        "disk": args.disk_size,
-        "data": args.data_size,
-        "image": args.image_num,
-        "idletime": args.idletime,
-        "vnode": args.vnode_num
+def port_apply(cookie,args):
+    payload={
+        'token': cookie['data']['token'],
+        "clustername": args.w_name
     }
-    # send requests and handle response
-    response = conect_s.post(url=group_add_url, data=payload)
-    if 'Sorry, but you did not have the authorizaion for that action' in response.text:
-        print('Error! only administrator can do this!')
-    elif response.status_code==requests.codes.ok:
-        print('add group %s, request sent success' % args.name)
-    else:
-        print('add group %s, request sent failed' % args.name)
-
-@base_func
-def group_edit(conect_s,baseurl,masterIP,args):
-    #get url
-    group_edit_url = baseurl + "/group/modify/" + args.name + "/"
+    containers=requests.post(url='http://'+host_ip+':'+master_port+'/cluster/info/',data=payload).json()['message']['containers']
+    node_ip='0'
+    for container in containers:
+        if container['containername']==args.n_name:
+            node_ip=container['ip'][:-3]
     payload = {
-        "groupname": args.name,
-        "cpu": args.cpu_num,
-        "memory": args.memory_size,
-        "disk": args.disk_size,
-        "data": args.data_size,
-        "image": args.image_num,
-        "idletime": args.idletime,
-        "vnode": args.vnode_num
+        'token': cookie['data']['token'],
+        'clustername':args.w_name,
+        'node_name':args.n_name,
+        'node_ip':node_ip,
+        'node_port':args.port
     }
-    # send requests and handle response
-    response = conect_s.post(url=group_edit_url, data=payload)
-    if 'Sorry, but you did not have the authorizaion for that action' in response.text:
-        print('Error! only administrator can do this!')
-    elif response.status_code==requests.codes.ok:
-        print('change config of group %s, request sent success' % args.name)
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/port_mapping/add/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print('success add port_mapping')
     else:
-        print('change config of group %s, request sent failed' % args.name)
+        print(result['message'])
+
 
 @base_func
-def group_delete(conect_s,baseurl,masterIP,args):
-    #get url
-    group_delete_url = baseurl + "/group/delete/" + args.name + "/"
-    # send requests and handle response
-    response = conect_s.get(url=group_delete_url)
-    if 'Sorry, but you did not have the authorizaion for that action' in response.text:
-        print('Error! only administrator can do this!')
-    elif response.status_code==requests.codes.ok:
-        print('delete group %s, request sent success' % args.name)
-    else:
-        print('delete group %s, request sent failed' % args.name)
-
-@base_func
-def notification_add(conect_s,baseurl,masterIP,args):
-    #get url
-    notification_add_url = baseurl + '/notification/create/'
-    payload = {
-        "title": args.title,
-        "content": args.content,
-        "groups": args.groups
+def port_delete(cookie,args):
+    payload={
+        'token':cookie['data']['token'],
+        'clustername':args.w_name,
+        'node_name':args.n_name
     }
-    # send requests and handle response
-    response = conect_s.post(url=notification_add_url, data=payload)
-    if 'Sorry, but you did not have the authorizaion for that action' in response.text:
-        print('Error! only administrator can do this!')
-    elif response.status_code==requests.codes.ok:
-        print('add notification %s, request sent success' % args.title)
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/port_mapping/delete/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print('success delete port_mapping')
     else:
-        print('add notification %s, request sent failed' % args.title)
+        print(result['message'])
 
 @base_func
-def notification_edit(conect_s,baseurl,masterIP,args):
-    #get url
-    notification_edit_url = baseurl + '/notification/modify/'
-    payload = {
-        "title": args.title,
-        "content": args.content,
-        "notify_id": args.notify_id,
-        "groups": args.groups,
-        "status": args.status
-
+def history(cookie,args):
+    payload={
+        'token':cookie['data']['token']
     }
-    # send requests and handle response
-    response = conect_s.post(url=notification_edit_url, data=payload)
-    if 'Sorry, but you did not have the authorizaion for that action' in response.text:
-        print('Error! only administrator can do this!')
-    elif response.status_code==requests.codes.ok:
-        print('change set of notification %s, request sent success' % args.title)
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/monitor/user/createdvnodes/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print(result.get('createdvnodes'))
     else:
-        print('change set of notification %s, request sent failed' % args.title)
+        print(result['message'])
 
 @base_func
-def notification_delete(conect_s,baseurl,masterIP,args):
-    #get url
-    notification_delete_url = baseurl + '/notification/delete/'
-    payload = {
-        "notify_id": args.notify_id
+def beans_apply(cookie,args):
+    payload={
+        'token':cookie['data']['token'],
+        "number": args.num,
+        "reason": args.reason
     }
-    # send requests and handle response
-    response = conect_s.post(url=notification_delete_url, data=payload)
-    if 'Sorry, but you did not have the authorizaion for that action' in response.text:
-        print('Error! only administrator can do this!')
-    elif response.status_code==requests.codes.ok:
-        print('delete notification %s, request sent success' % args.notify_id)
-    else:
-        print('delete notification %s, request sent failed' % args.notify_id)
+    try:
+        result=requests.post(url='http://'+host_ip+':'+user_port+'/beans/apply/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    print(result['message'])
 
 @base_func
-def user_add(conect_s,baseurl,masterIP,args):
-    #get url
-    user_add_url = baseurl + '/user/add/'
-    payload = {
+def logs_list(cookie,args):
+    payload={
+        'token':cookie['data']['token']
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/logs/list/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print(result['result'])
+    else:
+        print(result['message'])
+
+@base_func
+def log_get(cookie,args):
+    payload={
+        'token':cookie['data']['token'],
+        'filename':args.name
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/logs/get/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print(result)
+    else:
+        print(result['message'])
+
+@base_func
+def user_list(cookie,args):
+    payload={
+        'token':cookie['data']['token']
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+user_port+'/user/data/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print(result['data'])
+    else:
+        print(result['message'])
+
+@base_func
+def user_add(cookie,args):
+    payload={
+        'token':cookie['data']['token'],
         "username": args.name,
         "password": args.password,
         "e_mail": args.e_mail
     }
-    # send requests and handle response
-    response = conect_s.post(url=user_add_url, data=payload)
-    if 'Sorry, but you did not have the authorizaion for that action' in response.text:
-        print('Error! only administrator can do this!')
-    elif response.status_code==requests.codes.ok:
-        print('add user %s, request sent success' % args.name)
+    try:
+        result=requests.post(url='http://'+host_ip+':'+user_port+'/user/add/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print('success add user %s' % args.name)
     else:
-        print('add user %s, request sent failed' % args.name)
+        print(result['message'])
 
 @base_func
-def user_edit(conect_s,baseurl,masterIP,args):
-    #get url
-    user_edit_url = baseurl + '/user/modify/'
-    payload = {
+def user_edit(cookie,args):
+    payload={
+        'token':cookie['data']['token'],
         "username": args.name,
         "status": args.status,
         "truename": args.truename,
@@ -385,11 +634,121 @@ def user_edit(conect_s,baseurl,masterIP,args):
         "auth_method": args.auth_method,
         "description": args.description
     }
-    # send requests and handle response
-    response = conect_s.post(url=user_edit_url, data=payload)
-    if 'Sorry, but you did not have the authorizaion for that action' in response.text:
-        print('Error! only administrator can do this!')
-    elif response.status_code==requests.codes.ok:
-        print('change user info of %s, request sent success' % args.name)
+    try:
+        result=requests.post(url='http://'+host_ip+':'+user_port+'/user/modify/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print('success update info of user %s' % args.name)
     else:
-        print('change user info of %s, request sent failed' % args.name)
+        print(result['message'])
+
+
+@base_func
+def user_default(cookie,args):
+    payload={
+        'token':cookie['data']['token']
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+master_port+'/monitor/user/quotainfo/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print(result['quotainfo'])
+    else:
+        print(result['message'])
+
+@base_func
+def group_list(cookie,args):
+    payload={
+        'token':cookie['data']['token']
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+user_port+'/user/groupList/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        for group in result['groups']:
+            print(group)
+    else:
+        print(result['message'])
+
+@base_func
+def group_add(cookie,args):
+    payload={
+        'token':cookie['data']['token'],
+        "groupname": args.name,
+        "cpu": args.cpu_num,
+        "memory": args.memory_size,
+        "disk": args.disk_size,
+        "data": args.data_size,
+        "image": args.image_num,
+        "idletime": args.idletime,
+        "vnode": args.vnode_num
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+user_port+'/user/groupadd/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print('success add group %s' % args.name)
+    else:
+        print(result['message'])
+
+@base_func
+def group_edit(cookie,args):
+    payload={
+        'token':cookie['data']['token'],
+        "groupname": args.name,
+        "cpu": args.cpu_num,
+        "memory": args.memory_size,
+        "disk": args.disk_size,
+        "data": args.data_size,
+        "image": args.image_num,
+        "idletime": args.idletime,
+        "vnode": args.vnode_num
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+user_port+'/user/groupModify/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print('success update group %s' % args.name)
+    else:
+        print(result['message'])
+
+@base_func
+def group_delete(cookie,args):
+    payload={
+        'token':cookie['data']['token'],
+        'name':args.name
+    }
+    try:
+        result=requests.post(url='http://'+host_ip+':'+user_port+'/user/groupdel/',data=payload).json()
+    except:
+        print('fail to send the request,check your connection')
+        exit(1)
+    if result['success']=='true':
+        print('success delete group %s' % args.name)
+    else:
+        print(result['message'])
+
+
+#@base_func
+#def module(cookie,args):
+#    payload={
+#        'token':cookie['data']['token']
+#    }
+#    try:
+#        result=requests.post(url=,data=payload).json()
+#    except:
+#        print('fail to send the request,check your connection')
+#    if result['success']=='true':
+#        print(result)
+#    else:
+#        print(result['message'])

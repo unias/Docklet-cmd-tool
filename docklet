@@ -3,13 +3,7 @@
 
 import os
 import argparse
-from functions import login,beans_apply,logout
-from functions import workspace_add,workspace_start,workspace_stop,workspace_delete
-from functions import node_add,node_default_set,node_save,node_delete
-from functions import port_apply,port_delete
-from functions import group_add,group_edit,group_delete
-from functions import notification_add,notification_edit,notification_delete
-from functions import user_add,user_edit
+from functions import *
 
 if not os.path.exists('/tmp/cookies'):
     os.makedirs('/tmp/cookies')
@@ -19,29 +13,49 @@ subparsers=parser.add_subparsers()
 
 #login
 parser_login=subparsers.add_parser('login',help='login to your server')
-parser_login.add_argument('address', type=str, help='address of the server,could be ip:port or Domain name')
-parser_login.add_argument('masterIP', type=str, help='ip of the master')
-parser_login.add_argument('username', type=str, help='username to login the server')
+#parser_login.add_argument('address', type=str, help='address of the server,could be ip:port or Domain name')
+#parser_login.add_argument('masterIP', type=str, help='ip of the master')
+parser_login.add_argument('user', type=str, help='username to login the server')
 parser_login.add_argument('password', type=str, help='password of the user')
 parser_login.set_defaults(func=login)
 
-
-#beans
-parser_beans=subparsers.add_parser('beans',help='operations about beans,including apply')
-beans_subparsers=parser_beans.add_subparsers()
-##apply beans
-parser_apply_beans=beans_subparsers.add_parser('apply',help='apply n beans')
-parser_apply_beans.add_argument('num', type=int, help='the number of beans')
-parser_apply_beans.add_argument('-r', '--reason', type=str, help='the reason', default='')
-parser_apply_beans.set_defaults(func=beans_apply)
-##beans info
+#pkulogin
+parser_login=subparsers.add_parser('pkulogin',help='login to your server')
+#parser_login.add_argument('address', type=str, help='address of the server,could be ip:port or Domain name')
+#parser_login.add_argument('masterIP', type=str, help='ip of the master')
+parser_login.add_argument('username', type=str, help='username to login the server')
+parser_login.add_argument('password', type=str, help='password of the user')
+parser_login.set_defaults(func=pkulogin)
 
 #logout
 parser_logout=subparsers.add_parser('logout',help='logout from the server')
 parser_logout.set_defaults(func=logout)
 
+#image
+parser_image=subparsers.add_parser('image',help='functions about images,including ls share unshare delete updatebase')
+image_subparsers=parser_image.add_subparsers()
+##image list
+parser_list_image=image_subparsers.add_parser('ls',help='list images')
+parser_list_image.set_defaults(func=image_list)
+##image share
+parser_share_image=image_subparsers.add_parser('share',help='share an image')
+parser_share_image.add_argument('name',type=str,help='name of image you want to share')
+parser_share_image.set_defaults(func=image_share)
+##image unshare
+parser_unshare_image=image_subparsers.add_parser('unshare',help='unshare an image')
+parser_unshare_image.add_argument('name',type=str,help='name of image you want to unshare')
+parser_unshare_image.set_defaults(func=image_unshare)
+##image delete
+parser_delete_image=image_subparsers.add_parser('delete',help='delete an image')
+parser_delete_image.add_argument('name',type=str,help='name of image you want to delete')
+parser_delete_image.set_defaults(func=image_delete)
+##image update base
+parser_updatebase_image=image_subparsers.add_parser('updatebase',help='update an image as base image')
+parser_updatebase_image.add_argument('name',type=str,help='name of image you want to update as base image')
+parser_updatebase_image.set_defaults(func=image_updatebase)
+
 #workspace
-parser_workspace=subparsers.add_parser('workspace',help='functions about worksapce,inlcuding add start stop delete')
+parser_workspace=subparsers.add_parser('workspace',help='functions about worksapce,inlcuding add start stop delete ls info')
 workspace_subparsers=parser_workspace.add_subparsers()
 ##add workspace
 parser_add_workspace=workspace_subparsers.add_parser('add',help='add a worksapce')
@@ -50,22 +64,29 @@ parser_add_workspace.add_argument('image',type=str,help='image to use')
 parser_add_workspace.add_argument('c',type=int,help='cpu number for this node')
 parser_add_workspace.add_argument('m',type=int,help='memory size for this node')
 parser_add_workspace.add_argument('d',type=int,help='disk size for this node')
-parser_add_workspace.set_defaults(func=workspace_add)
+parser_add_workspace.set_defaults(func=cluster_create)
 ##start workspace
 parser_start_workspace=workspace_subparsers.add_parser('start',help='start the worksapce with name as \'name\'')
 parser_start_workspace.add_argument('name',type=str,help='name of the workspace you want to start')
-parser_start_workspace.set_defaults(func=workspace_start)
+parser_start_workspace.set_defaults(func=cluster_start)
 ##stop workspace
 parser_stop_workspace=workspace_subparsers.add_parser('stop',help='stop the worksapce with name as \'name\'')
 parser_stop_workspace.add_argument('name',type=str,help='name of the workspace you want to stop')
-parser_stop_workspace.set_defaults(func=workspace_stop)
+parser_stop_workspace.set_defaults(func=cluster_stop)
 ##delete workspace
 parser_delete_workspace=workspace_subparsers.add_parser('delete',help='delete the worksapce with name as \'name\'')
 parser_delete_workspace.add_argument('name',type=str,help='name of the workspace you want to delete')
-parser_delete_workspace.set_defaults(func=workspace_delete)
+parser_delete_workspace.set_defaults(func=cluster_delete)
+##list workspace
+parser_list_workspace=workspace_subparsers.add_parser('ls',help='list the workspaces')
+parser_list_workspace.set_defaults(func=cluster_list)
+##info of workspace
+parser_info_workspace=workspace_subparsers.add_parser('info',help='info the the workspace')
+parser_info_workspace.add_argument('name',type=str,help='name of the workspace')
+parser_info_workspace.set_defaults(func=cluster_info)
 
 #node
-parser_node=subparsers.add_parser('node',help='functions about nodes,including add default save delete')
+parser_node=subparsers.add_parser('node',help='functions about nodes,including add default status status_all save delete flush ls')
 node_subparsers=parser_node.add_subparsers()
 ##add node
 parser_add_node=node_subparsers.add_parser('add',help='add a node')
@@ -77,19 +98,30 @@ parser_add_node.add_argument('m',type=int,help='memory size for this node')
 parser_add_node.add_argument('d',type=int,help='disk size for this node')
 parser_add_node.set_defaults(func=node_add)
 ##node default
-parser_node_default=node_subparsers.add_parser('default',help='functions about node default set,including set')
+parser_node_default=node_subparsers.add_parser('default',help='functions about node default set,including set get')
 node_default_subparsers=parser_node_default.add_subparsers()
 ###node default set
 parser_node_default_set=node_default_subparsers.add_parser('set',help='set node default config')
-parser_node_default_set.add_argument('cpu_num',type=str,help='default cpu number of each node')
-parser_node_default_set.add_argument('memory_size',type=str,help='default memory size of each node')
-parser_node_default_set.add_argument('disk_size',type=str,help='default disk size of each node')
+parser_node_default_set.add_argument('--cpu_num',type=str,help='default cpu number of each node',default=2)
+parser_node_default_set.add_argument('--memory_size',type=str,help='default memory size of each node',default=2000)
+parser_node_default_set.add_argument('--disk_size',type=str,help='default disk size of each node',default=2000)
 parser_node_default_set.set_defaults(func=node_default_set)
+###get default set of node
+parser_get_defaultset_node=node_default_subparsers.add_parser('get',help='get default config of node')
+parser_get_defaultset_node.set_defaults(func=node_default_get)
+##status of node
+parser_status_node=node_subparsers.add_parser('status',help=' status of a node')
+parser_status_node.add_argument('n_name',type=str,help='name of the node')
+parser_status_node.set_defaults(func=node_status)
+##status of all nodes
+parser_status_node_all=node_subparsers.add_parser('status_all',help='status of all nodes')
+parser_status_node_all.set_defaults(func=status_all)
 ##save image
 parser_save_node=node_subparsers.add_parser('save',help='save one node as an image')
 parser_save_node.add_argument('w_name',type=str,help='name of the workspace')
 parser_save_node.add_argument('n_name',type=str,help='name of the node')
 parser_save_node.add_argument('i_name',type=str,help='name of the image')
+parser_save_node.add_argument('--isforce',type=bool,help='force to save or not',default=False)
 parser_save_node.add_argument('-d','--description',type=str,help='description of the image',default='')
 parser_save_node.set_defaults(func=node_save)
 ##delete node
@@ -97,6 +129,15 @@ parser_delete_node=node_subparsers.add_parser('delete',help='delete a node')
 parser_delete_node.add_argument('w_name',type=str,help='name of the workspace')
 parser_delete_node.add_argument('n_name',type=str,help='name of the node')
 parser_delete_node.set_defaults(func=node_delete)
+##delete node
+parser_flush_node=node_subparsers.add_parser('flush',help='flush a node')
+parser_flush_node.add_argument('w_name',type=str,help='name of the workspace')
+parser_flush_node.add_argument('n_name',type=str,help='name of the node')
+parser_flush_node.set_defaults(func=node_flush)
+##node list
+parser_list_node=node_subparsers.add_parser('ls',help='list nodes of a workspace')
+parser_list_node.add_argument('name',type=str,help='name of the workspace')
+parser_list_node.set_defaults(func=node_list)
 
 #port
 parser_port=subparsers.add_parser('port',help='functions about port,including apply delete')
@@ -105,71 +146,47 @@ port_subparsers=parser_port.add_subparsers()
 parser_apply_port=port_subparsers.add_parser('apply',help='apply a port for one node')
 parser_apply_port.add_argument('w_name',type=str,help='name of workspace')
 parser_apply_port.add_argument('n_name',type=str,help='name of node')
-parser_apply_port.add_argument('node_ip',type=str,help='ip of the node')
+#parser_apply_port.add_argument('node_ip',type=str,help='ip of the node')
 parser_apply_port.add_argument('-p','--port',type=str,help='port number',default='80')
 parser_apply_port.set_defaults(func=port_apply)
 ##delete port
 parser_delete_port=port_subparsers.add_parser('delete',help='delete a port')
 parser_delete_port.add_argument('w_name',type=str,help='name of workspace')
 parser_delete_port.add_argument('n_name',type=str,help='name of node')
-parser_delete_port.add_argument('-p','--port',type=str,help='port number',default='80')
+#parser_delete_port.add_argument('-p','--port',type=str,help='port number',default='80')
 parser_delete_port.set_defaults(func=port_delete)
 
-#group
-parser_group=subparsers.add_parser('group',help='functions about group')
-group_subparsers=parser_group.add_subparsers()
-##add group
-parser_add_group=group_subparsers.add_parser('add',help='add one group')
-parser_add_group.add_argument('name',type=str,help='name of the group')
-parser_add_group.add_argument('cpu_num',type=int,help='number of cpu each user in this group can use')
-parser_add_group.add_argument('memory_size',type=int,help='size of memory each user in this group can use')
-parser_add_group.add_argument('disk_size',type=int,help='size of disk(MB) each user in this group can use')
-parser_add_group.add_argument('data_size',type=int,help='size of space(GB) each user in this group can use for storing data')
-parser_add_group.add_argument('image_num',type=int,help='number of image each user in this group can store')
-parser_add_group.add_argument('idletime',type=int,help='after idle_time hours with no operation, the nodes idle')
-parser_add_group.add_argument('vnode_num',type=int,help='number of nodes each user in this group can create')
-parser_add_group.set_defaults(func=group_add)
-##edit group
-parser_edit_group=group_subparsers.add_parser('edit',help='change the config of a group')
-parser_edit_group.add_argument('name',type=str,help='name of the group you want to edit')
-parser_edit_group.add_argument('cpu_num',type=int,help='number of cpu each user in this group can use')
-parser_edit_group.add_argument('memory_size',type=int,help='size of memory each user in this group can use')
-parser_edit_group.add_argument('disk_size',type=int,help='size of disk(MB) each user in this group can use')
-parser_edit_group.add_argument('data_size',type=int,help='size of space(GB) each user in this group can use for storing data')
-parser_edit_group.add_argument('image_num',type=int,help='number of image each user in this group can store')
-parser_edit_group.add_argument('idletime',type=int,help='after idle_time hours with no operation, the nodes idle')
-parser_edit_group.add_argument('vnode_num',type=int,help='number of nodes each user in this group can create')
-parser_edit_group.set_defaults(func=group_edit)
-##delete group
-parser_delete_group=group_subparsers.add_parser('delete',help='delete a group')
-parser_delete_group.add_argument('name',type=str,help='name of the group you want to delete')
-parser_delete_group.set_defaults(func=group_delete)
+#history
+parser_history=subparsers.add_parser('history',help='get history')
+parser_history.set_defaults(func=history)
 
-#notification
-parser_notification=subparsers.add_parser('notification',help='functions about notifications,including add edit delete')
-notification_subparsers=parser_notification.add_subparsers()
-##add notification
-parser_add_notification=notification_subparsers.add_parser('add',help='add one notification')
-parser_add_notification.add_argument('-t','--title',type=str,help='title of the notification',default='')
-parser_add_notification.add_argument('-c','--content',type=str,help='',default='')
-parser_add_notification.add_argument('-g','--groups',type=str,nargs='+',default=None)
-parser_add_notification.set_defaults(func=notification_add)
-##edit notification
-parser_edit_notification=notification_subparsers.add_parser('edit',help='edit the config of one notification')
-parser_edit_notification.add_argument('notify_id',type=int,help='id_num of the notification')
-parser_edit_notification.add_argument('-t','--title',type=str,help='title of the notification',default='')
-parser_edit_notification.add_argument('-c','--content',type=str,help='',default='')
-parser_edit_notification.add_argument('-g','--groups',type=str,nargs='+',default=None)
-parser_edit_notification.add_argument('-s','--status',type=str,help='status of the notification',choices=['opend','closed'],default='opend')
-parser_edit_notification.set_defaults(func=notification_edit)
-##delete notification
-parser_delete_notification=notification_subparsers.add_parser('delete',help='delete one notification')
-parser_delete_notification.add_argument('notify_id',type=int,help='id_num of the notification')
-parser_delete_notification.set_defaults(func=notification_delete)
+#beans
+parser_beans=subparsers.add_parser('beans',help='operations about beans,including apply')
+beans_subparsers=parser_beans.add_subparsers()
+##apply beans
+parser_apply_beans=beans_subparsers.add_parser('apply',help='apply n beans')
+parser_apply_beans.add_argument('num', type=int, help='the number of beans')
+parser_apply_beans.add_argument('-r', '--reason', type=str, help='the reason', default='')
+parser_apply_beans.set_defaults(func=beans_apply)
+##beans info
+
+#log
+parser_log=subparsers.add_parser('log',help='operations about logs,including ls get')
+log_subparsers=parser_log.add_subparsers()
+##list log
+parser_list_log=log_subparsers.add_parser('ls',help='list logs')
+parser_list_log.set_defaults(func=logs_list)
+##get log
+parser_get_log=log_subparsers.add_parser('get',help='get log')
+parser_get_log.add_argument('name',help='name of log')
+parser_get_log.set_defaults(func=log_get)
 
 #user
-parser_user=subparsers.add_parser('user',help='functions about user,including add edit')
+parser_user=subparsers.add_parser('user',help='functions about user,including add edit ls default')
 user_subparsers=parser_user.add_subparsers()
+##list user
+parser_list_user=user_subparsers.add_parser('ls',help='list users')
+parser_list_user.set_defaults(func=user_list)
 ##add user
 parser_add_user=user_subparsers.add_parser('add',help='add one user')
 parser_add_user.add_argument('name',type=str,help='name of the new user')
@@ -177,7 +194,7 @@ parser_add_user.add_argument('password',type=str,help='password of the new user'
 parser_add_user.add_argument('-e','--e_mail',type=str,help='e_mail of the new user',default='')
 parser_add_user.set_defaults(func=user_add)
 ##edit user
-parser_edit_user=user_subparsers.add_parser('edit',help='edit config of one user')
+parser_edit_user=user_subparsers.add_parser('edit',help='edit config or information of one user')
 parser_edit_user.add_argument('name',type=str,help='name of the new user')
 parser_edit_user.add_argument('-s','--status',type=str,help='status of the user',default='normal',choices=['normal','applying','init','locked'])
 parser_edit_user.add_argument('-t','--truename',type=str,help='truename of the user',default='')
@@ -189,6 +206,44 @@ parser_edit_user.add_argument('-g','--group',type=str,help='group of the user',d
 parser_edit_user.add_argument('-a','--auth_method',type=str,help='',choices=['local','pam','iaaa'],default='local')
 parser_edit_user.add_argument('--description',type=str,help='description about the user',default='')
 parser_edit_user.set_defaults(func=user_edit)
+##user default
+parser_default_user=user_subparsers.add_parser('default',help='get default config for a user')
+parser_default_user.set_defaults(func=user_default)
+
+
+#group
+parser_group=subparsers.add_parser('group',help='functions about group,including ls add edit delete')
+group_subparsers=parser_group.add_subparsers()
+##list group
+parser_list_group=group_subparsers.add_parser('ls',help='delete a group')
+parser_list_group.set_defaults(func=group_list)
+##add group
+parser_add_group=group_subparsers.add_parser('add',help='add one group')
+parser_add_group.add_argument('name',type=str,help='name of the group you want to add')
+parser_add_group.add_argument('--cpu_num',type=int,help='number of cpu each user in this group can use',default=4)
+parser_add_group.add_argument('--memory_size',type=int,help='size of memory each user in this group can use',default=4000)
+parser_add_group.add_argument('--disk_size',type=int,help='size of disk(MB) each user in this group can use',default=4000)
+parser_add_group.add_argument('--data_size',type=int,help='size of space(GB) each user in this group can use for storing data',default=10)
+parser_add_group.add_argument('--image_num',type=int,help='number of image each user in this group can store',default=10)
+parser_add_group.add_argument('--idletime',type=int,help='after idle_time hours with no operation, the nodes idle',default=24)
+parser_add_group.add_argument('--vnode_num',type=int,help='number of nodes each user in this group can create',default=8)
+parser_add_group.set_defaults(func=group_add)
+##edit group
+parser_edit_group=group_subparsers.add_parser('edit',help='change the config of a group')
+parser_edit_group.add_argument('name',type=str,help='name of the group you want to edit')
+parser_edit_group.add_argument('--cpu_num',type=int,help='number of cpu each user in this group can use',default=4)
+parser_edit_group.add_argument('--memory_size',type=int,help='size of memory each user in this group can use',default=4000)
+parser_edit_group.add_argument('--disk_size',type=int,help='size of disk(MB) each user in this group can use',default=4000)
+parser_edit_group.add_argument('--data_size',type=int,help='size of space(GB) each user in this group can use for storing data',default=10)
+parser_edit_group.add_argument('--image_num',type=int,help='number of image each user in this group can store',default=10)
+parser_edit_group.add_argument('--idletime',type=int,help='after idle_time hours with no operation, the nodes idle',default=24)
+parser_edit_group.add_argument('--vnode_num',type=int,help='number of nodes each user in this group can create',default=8)
+parser_edit_group.set_defaults(func=group_edit)
+##delete group
+parser_delete_group=group_subparsers.add_parser('delete',help='delete a group')
+parser_delete_group.add_argument('name',type=str,help='name of the group you want to delete')
+parser_delete_group.set_defaults(func=group_delete)
+
 
 if __name__=='__main__':
     args=parser.parse_args()
