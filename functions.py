@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import os
@@ -7,22 +7,28 @@ import json
 from functools import wraps
 
 #set config
-user_port='9100'
-host_ip='222.29.159.164'
-master_port='9000'
-
+try:
+    with open("./config.json",'r') as load_f:
+        load_dict = json.load(load_f)
+        user_port=load_dict['USER_PORT']
+        host_ip=load_dict['MASTER_IP']
+        master_port=load_dict['MASTER_PORT']
+except FileNotFoundError:
+    msg = "sorry, config file does not exist."
+    print(msg)
+    exit(1)
 
 def base_func(func):
     @wraps(func)
     def wrapper(*args, **kw):
         #check whether the user have login
-        if not os.path.exists(os.environ['HOME']+'/docklet-cookies/token.json'):
+        if not os.path.exists('./.docklet-cookies/token.json'):
             print('please login first!')
             print('run docklet login -h for help')
             exit(1)
         #load token
         try:
-            cookie_file=open(os.environ['HOME']+'/docklet-cookies/token.json','r')
+            cookie_file=open('./.docklet-cookies/token.json','r')
         except:
             print('fail to open the token file')
             exit(1)
@@ -34,9 +40,9 @@ def base_func(func):
 
 def pkulogin(args):
     # check whether there is already one user
-    if os.path.exists(os.environ['HOME']+'/docklet-cookies/token.json'):
+    if os.path.exists('./.docklet-cookies/token.json'):
         print("Error: there is already one user, if you want to use another account ,please logout first!")
-        exit(0)
+        exit(1)
     # create session
     conect_s = requests.Session()
     # get url
@@ -64,20 +70,22 @@ def pkulogin(args):
     result=requests.post(url='http://'+host_ip+':'+user_port+'/external_login/',data=payload).json()
     if result['success']=='true':
         print('login success')
-        if not os.path.exists(os.environ['HOME']+'/docklet-cookies/'):
-            os.makedirs(os.environ['HOME']+'/docklet-cookies/')
-        f = open(os.environ['HOME']+"/docklet-cookies/token.json", "w")
+        if not os.path.exists('./.docklet-cookies/'):
+            os.makedirs('./.docklet-cookies/')
+        f = open("./.docklet-cookies/token.json", "w")
         json.dump(result, f)
         f.close()
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 
 def login(args):
     # check whether there is already one user
-    if os.path.exists(os.environ['HOME']+'/docklet-cookies/token.json'):
+    if os.path.exists('./.docklet-cookies/token.json'):
         print("Error: there is already one user, if you want to use another account ,please logout first!")
-        exit(0)
+        exit(1)
     # get url
     baseurl = 'http://' + host_ip+':'+user_port
     login_url = baseurl + '/login/'
@@ -93,21 +101,24 @@ def login(args):
         exit(1)
     if result['success']=='true':
         print('login success')
-        if not os.path.exists(os.environ['HOME']+'/docklet-cookies/'):
-            os.makedirs(os.environ['HOME']+'/docklet-cookies/')
-        f=open(os.environ['HOME']+"/docklet-cookies/token.json", "w")
+        if not os.path.exists('./.docklet-cookies/'):
+            os.makedirs('./.docklet-cookies/')
+        f=open("./.docklet-cookies/token.json", "w")
         json.dump(result, f)
         f.close()
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def logout(cookie,args):
-    if os.path.exists(os.environ['HOME']+'/docklet-cookies/token.json'):
-        os.remove(os.environ['HOME']+'/docklet-cookies/token.json')
-    if os.path.exists(os.environ['HOME']+'/docklet-cookies/master_ip'):
-        os.remove(os.environ['HOME']+'/docklet-cookies/master_ip')
+    if os.path.exists('./.docklet-cookies/token.json'):
+        os.remove('./.docklet-cookies/token.json')
+    #if os.path.exists('./.docklet-cookies/master_ip'):
+    #    os.remove('./.docklet-cookies/master_ip')
     print('logout success')
+    exit(0)
 
 @base_func
 def image_list(cookie,args):

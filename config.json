@@ -1,0 +1,5 @@
+{ 
+	"USER_PORT":"9100", 
+	"MASTER_PORT":"9001", 
+	"MASTER_IP":"localhost" 
+}

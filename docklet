@@ -1,28 +1,21 @@
-#!/usr/bin/python3.5
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import os
 import argparse
 from functions import *
 
-if not os.path.exists('/tmp/cookies'):
-    os.makedirs('/tmp/cookies')
-
 parser=argparse.ArgumentParser(prog='docklet')
 subparsers=parser.add_subparsers()
 
 #login
 parser_login=subparsers.add_parser('login',help='login to your server')
-#parser_login.add_argument('address', type=str, help='address of the server,could be ip:port or Domain name')
-#parser_login.add_argument('masterIP', type=str, help='ip of the master')
 parser_login.add_argument('user', type=str, help='username to login the server')
 parser_login.add_argument('password', type=str, help='password of the user')
 parser_login.set_defaults(func=login)
 
 #pkulogin
 parser_login=subparsers.add_parser('pkulogin',help='login to your server')
-#parser_login.add_argument('address', type=str, help='address of the server,could be ip:port or Domain name')
-#parser_login.add_argument('masterIP', type=str, help='ip of the master')
 parser_login.add_argument('username', type=str, help='username to login the server')
 parser_login.add_argument('password', type=str, help='password of the user')
 parser_login.set_defaults(func=pkulogin)
