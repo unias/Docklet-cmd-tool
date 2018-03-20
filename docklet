@@ -14,12 +14,6 @@ parser_login.add_argument('user', type=str, help='username to login the server')
 parser_login.add_argument('password', type=str, help='password of the user')
 parser_login.set_defaults(func=login)
 
-#pkulogin
-parser_login=subparsers.add_parser('pkulogin',help='login to your server')
-parser_login.add_argument('username', type=str, help='username to login the server')
-parser_login.add_argument('password', type=str, help='password of the user')
-parser_login.set_defaults(func=pkulogin)
-
 #logout
 parser_logout=subparsers.add_parser('logout',help='logout from the server')
 parser_logout.set_defaults(func=logout)

@@ -4,23 +4,17 @@ A simple CMD tool for docklet, with witch you can write shell script for docklet
 
 ### Intoduction
 A simple cmd tool for docklet, with witch you can write shell script for docklet.
-### Install
-run install:  
-> sudo ./install  
 
-The python file docklet and function.py will be installed to /user/bin. Then you can run docklet tool in the terminal.   
-
-
-For example:  
-> docklet login iwork.pku.edu.cn 162.123.123.123 root 12345  
 
 ### usage
+For example:  
+> docklet login username password  
+
 There are multi-level commands in this tool.  
 If any questions, just  run 'docklet -h' in the terminal for help.  
 The following is the command tree, some of them need Administrator privileges, run '-h' for more details:   
 > docklet  
 >>-login
->>-pkulogin  
 >>-logout  
 >>-beans  
 >>>-apply  

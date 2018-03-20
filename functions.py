@@ -38,49 +38,6 @@ def base_func(func):
         return func(cookie,*args, **kw)
     return wrapper
 
-def pkulogin(args):
-    # check whether there is already one user
-    if os.path.exists('./.docklet-cookies/token.json'):
-        print("Error: there is already one user, if you want to use another account ,please logout first!")
-        exit(1)
-    # create session
-    conect_s = requests.Session()
-    # get url
-    login_url = 'https://iaaa.pku.edu.cn/iaaa/oauthlogin.do'
-    external_payload = {
-        "appid":'iwork',
-        "otpCode":'动态口令',
-        "password": args.password,
-        "randCode":'验证码',
-        "redirUrl":'http://iwork.pku.edu.cn/pkulogin',
-        "smsCode":'短信验证码',
-        "userName": args.username,
-    }
-    # send requests and handle response
-    try:
-        external_response = conect_s.post(url=login_url, data=external_payload)
-    except:
-        print('fail to send the auth request,check your connection')
-        exit(1)
-    payload={
-        'appid':'iwork',
-        'ip':'',
-        'token':external_response.json()['token']
-    }
-    result=requests.post(url='http://'+host_ip+':'+user_port+'/external_login/',data=payload).json()
-    if result['success']=='true':
-        print('login success')
-        if not os.path.exists('./.docklet-cookies/'):
-            os.makedirs('./.docklet-cookies/')
-        f = open("./.docklet-cookies/token.json", "w")
-        json.dump(result, f)
-        f.close()
-        exit(0)
-    else:
-        print(result['message'])
-        exit(1)
-
-
 def login(args):
     # check whether there is already one user
     if os.path.exists('./.docklet-cookies/token.json'):
