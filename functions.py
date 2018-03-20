@@ -139,8 +139,10 @@ def image_list(cookie,args):
             elif group=='public':
                 for image in result['images'][group]:
                     print('%s : %s' % (image,result['images'][group][image]))
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def image_share(cookie,args):
@@ -155,8 +157,10 @@ def image_share(cookie,args):
         exit(1)
     if result['success']=='true':
         print('success share image')
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def image_unshare(cookie,args):
@@ -171,9 +175,10 @@ def image_unshare(cookie,args):
         exit(1)
     if result['success']=='true':
         print('success unshare image')
+        exit(0)
     else:
         print(result['message'])
-
+        exit(1)
 
 @base_func
 def image_delete(cookie,  args):
@@ -188,8 +193,10 @@ def image_delete(cookie,  args):
         exit(1)
     if result['success'] == 'true':
         print('success delete image')
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def image_updatebase(cookie,  args):
@@ -204,9 +211,10 @@ def image_updatebase(cookie,  args):
         exit(1)
     if result['success'] == 'true':
         print('success update base image')
+        exit(0)
     else:
         print(result['message'])
-
+        exit(1)
 
 @base_func
 def cluster_create(cookie,args):
@@ -229,8 +237,10 @@ def cluster_create(cookie,args):
         exit(1)
     if result['success']=='true':
         print('success create cluster')
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def cluster_start(cookie,args):
@@ -245,8 +255,10 @@ def cluster_start(cookie,args):
         exit(1)
     if result['success']=='true':
         print('success start workspace %s' % args.name)
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def cluster_stop(cookie,args):
@@ -261,8 +273,10 @@ def cluster_stop(cookie,args):
         exit(1)
     if result['success'] == 'true':
         print('success stop workspace %s' % args.name)
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def cluster_delete(cookie,args):
@@ -277,8 +291,10 @@ def cluster_delete(cookie,args):
         exit(1)
     if result['success'] == 'true':
         print('success delete workspace %s' % args.name)
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def cluster_list(cookie,args):
@@ -291,9 +307,12 @@ def cluster_list(cookie,args):
         print('fail to send the request,check your connection')
         exit(1)
     if result['success']=='true':
-        print(result['clusters'])
+        for each_cluster in result['clusters']:
+            print(each_cluster)
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def cluster_info(cookie,args):
@@ -307,9 +326,12 @@ def cluster_info(cookie,args):
         print('fail to send the request,check your connection')
         exit(1)
     if result['success']=='true':
-        print(result['message'])
+        for (key,value) in sorted(result['message'].items()):
+            print(key,value)
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 
 @base_func
@@ -333,8 +355,10 @@ def node_add(cookie,args):
         exit(1)
     if result['success'] == 'true':
         print('success add node to %s' % args.w_name)
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def node_delete(cookie,args):
@@ -350,8 +374,10 @@ def node_delete(cookie,args):
         exit(1)
     if result['success']=='true' or result['message']=='No port mapping.':
         print('success delete node %s' % args.n_name)
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def node_save(cookie,args):
@@ -370,8 +396,10 @@ def node_save(cookie,args):
         exit(1)
     if result['success']=='true':
         print(result)
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def node_flush(cookie,args):
@@ -387,8 +415,10 @@ def node_flush(cookie,args):
         exit(1)
     if result['success']=='true':
         print('success flush node %s' % args.n_name)
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def node_list(cookie,args):
@@ -403,9 +433,12 @@ def node_list(cookie,args):
         exit(1)
     if result['success'] == 'true':
         for x in result['message']['containers']:
-            print(x)
+            for (key,value) in sorted(x.items()):
+                print(key,value)
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def node_status(cookie,args):
@@ -418,9 +451,12 @@ def node_status(cookie,args):
         print('fail to send the request,check your connection')
         exit(1)
     if result['success']=='true':
-        print(result['monitor']['basic_info'])
+        for (key,value) in sorted(result['monitor']['basic_info'].items()):
+            print(key,value)
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def node_default_set(cookie,args):
@@ -437,8 +473,10 @@ def node_default_set(cookie,args):
         exit(1)
     if result['success']=='true':
         print('success set default config for node')
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def node_default_get(cookie,args):
@@ -452,8 +490,10 @@ def node_default_get(cookie,args):
         exit(1)
     if result['success']=='true':
         print(result['data'])
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def status_all(cookie,args):
@@ -487,9 +527,15 @@ def status_all(cookie,args):
                         print('fail to send the request,check your connection')
                         exit(1)
                     if container_result['success'] == 'true':
-                        print(container_result['monitor']['basic_info'])
+                        for (key,value) in sorted(container_result['monitor']['basic_info'].items()):
+                            print(key,value)
                     else:
                         print(container_result['message'])
+                        exit(1)
+            else:
+                print(cluster_result['message'])
+                exit(1)
+        exit(0)
 
 @base_func
 def port_apply(cookie,args):
@@ -516,9 +562,10 @@ def port_apply(cookie,args):
         exit(1)
     if result['success']=='true':
         print('success add port_mapping')
+        exit(0)
     else:
         print(result['message'])
-
+        exit(1)
 
 @base_func
 def port_delete(cookie,args):
@@ -534,8 +581,10 @@ def port_delete(cookie,args):
         exit(1)
     if result['success']=='true':
         print('success delete port_mapping')
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def history(cookie,args):
@@ -549,8 +598,10 @@ def history(cookie,args):
         exit(1)
     if result['success']=='true':
         print(result.get('createdvnodes'))
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def beans_apply(cookie,args):
@@ -565,6 +616,7 @@ def beans_apply(cookie,args):
         print('fail to send the request,check your connection')
         exit(1)
     print(result['message'])
+    exit(0)
 
 @base_func
 def logs_list(cookie,args):
@@ -578,8 +630,10 @@ def logs_list(cookie,args):
         exit(1)
     if result['success']=='true':
         print(result['result'])
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def log_get(cookie,args):
@@ -594,8 +648,10 @@ def log_get(cookie,args):
         exit(1)
     if result['success']=='true':
         print(result)
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def user_list(cookie,args):
@@ -609,8 +665,10 @@ def user_list(cookie,args):
         exit(1)
     if result['success']=='true':
         print(result['data'])
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def user_add(cookie,args):
@@ -627,8 +685,10 @@ def user_add(cookie,args):
         exit(1)
     if result['success']=='true':
         print('success add user %s' % args.name)
+        exit(0)
     else:
         print(result['message'])
+        exit(0)
 
 @base_func
 def user_edit(cookie,args):
@@ -652,9 +712,10 @@ def user_edit(cookie,args):
         exit(1)
     if result['success']=='true':
         print('success update info of user %s' % args.name)
+        exit(0)
     else:
         print(result['message'])
-
+        exit(1)
 
 @base_func
 def user_default(cookie,args):
@@ -668,8 +729,10 @@ def user_default(cookie,args):
         exit(1)
     if result['success']=='true':
         print(result['quotainfo'])
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def group_list(cookie,args):
@@ -684,8 +747,10 @@ def group_list(cookie,args):
     if result['success']=='true':
         for group in result['groups']:
             print(group)
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def group_add(cookie,args):
@@ -707,8 +772,10 @@ def group_add(cookie,args):
         exit(1)
     if result['success']=='true':
         print('success add group %s' % args.name)
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def group_edit(cookie,args):
@@ -730,8 +797,10 @@ def group_edit(cookie,args):
         exit(1)
     if result['success']=='true':
         print('success update group %s' % args.name)
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
 @base_func
 def group_delete(cookie,args):
@@ -746,20 +815,8 @@ def group_delete(cookie,args):
         exit(1)
     if result['success']=='true':
         print('success delete group %s' % args.name)
+        exit(0)
     else:
         print(result['message'])
+        exit(1)
 
-
-#@base_func
-#def module(cookie,args):
-#    payload={
-#        'token':cookie['data']['token']
-#    }
-#    try:
-#        result=requests.post(url=,data=payload).json()
-#    except:
-#        print('fail to send the request,check your connection')
-#    if result['success']=='true':
-#        print(result)
-#    else:
-#        print(result['message'])
